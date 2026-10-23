@@ -14,6 +14,11 @@
 #4 : Calculate total seed production per stand and year
 #5 : Expand model at the trap level
 
+##Additional packages I had to install
+#install.packages("colormap")
+#install.packages("cmdstanr", repos = c('https://stan-dev.r-universe.dev', getOption("repos")))
+#check_cmdstan_toolchain(fix = TRUE) to check compilers
+#install_cmdstan(cores = 2) #this did not work but skipped because just installed cmdstanr!
 
 ## To do - add brief notes about libraries
 ## some warnings about conflicts (same function names in 2 packages, masking)
@@ -27,6 +32,13 @@ library(tidyverse)
 library(posterior)
 library(purrr)
 library(patchwork) 
+library(colormap) #for Betancourt source code
+#library(cmdstanr) #newer version of stan, do not run
+
+#had to download rtools45, and configure R to find rtools both in bin and in the mingw bin. 
+#only needed to do this once (I hope)
+#writeLines('PATH="C:/rtools45/usr/bin;
+#           C:/rtools45/x86_64-w64-mingw32.static.posix/bin;${PATH}"', con = "~/.Renviron")
 
 options(mc.cores = parallel::detectCores())
 
@@ -40,7 +52,6 @@ list.files("Data/")
 list.files("MCMC_tools/")
 
 ##Code from Michael Betancourt (for MCMC visualization)
-library(colormap) #required for 2 files below
 util <- new.env()
 source("MCMC_tools/mcmc_analysis_tools_rstan.R", local=util)
 source("MCMC_tools/mcmc_visualization_tools.R", local=util) 
@@ -187,11 +198,6 @@ print (stan_data_all)
 # Fitting Model -----------------------------------------------------------
 #Current model used after discussion in git
 #JHRL - had to download Rtools45 (for updated R package build)
-#Rtools45 is now users/jannekeh/documents (cannot be in C: or programs: without permission)
-#JHRL pulled the code below from internet - should check before running
-
-writeLines('PATH="C:\\Users\\jannekeh\\Documents\\rtools45\\usr\\bin;${PATH}"', con = "~/.Renviron")
-
 
 fit_75 <- stan(
   file    = "MultispeciesStanCodeLast.stan",
