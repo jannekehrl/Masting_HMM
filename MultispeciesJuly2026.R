@@ -1,16 +1,23 @@
-##Code for multispecies HMM model 
-#HMM with two states each defined by a NB distribution
+##Code for modeling multi-species masting
+##multispecies HMM model 
+#HMM with two states (low seed production and high seed production)
+#low states vary by species and stands
+#transitions vary by species
 #Start date: 12.03.2026
+#Current model and comments: JHRL (Oct, 2026)
 
-##Next things to do : 
+##To do (roughly by priority) 
 
-#1 : Add the 2009 year
-#2 : Trap-level
-#3 : Extract values for the synchrony.
-#4 : Clean my code (structure of the code and clean the top part)
+#1 : Continue to add comments and notes (for sharing code)
+#2 : Add the 2009 year
+#3 : Calculate synchrony for species (across stands) and stands (across species)
+#4 : Calculate total seed production per stand and year
+#5 : Expand model at the trap level
 
 
-#Libraries
+## To do - add brief notes about libraries
+## some warnings about conflicts (same function names in 2 packages, masking)
+#Load Libraries 
 library(dplyr)
 library(ggplot2)
 library(rstan)
@@ -24,34 +31,37 @@ library(patchwork)
 options(mc.cores = parallel::detectCores())
 
 
-
-
-#Setting working directory
-getwd()
-setwd("C:/Users/eperret/polybox - Eleonore Perret (eleonore.perret@usys.ethz.ch)@polybox.ethz.ch/phD/PhD/R/Masting_UBC/Masting")
+#Setting working directory (not needed for JHRL)
+#getwd()
+#setwd("C:/Users/eperret/polybox - Eleonore Perret (eleonore.perret@usys.ethz.ch)@polybox.ethz.ch/phD/PhD/R/Masting_UBC/Masting")
 
 list.files()
 list.files("Data/")
-list.files("Rscript_AnalysisEleonore/")
+list.files("MCMC_tools/")
 
-
+##Code from Michael Betancourt (for MCMC visualization)
+library(colormap) #required for 2 files below
 util <- new.env()
-source("Rscript_AnalysisEleonore/mcmc_analysis_tools_rstan.R", local=util)
-source("Rscript_AnalysisEleonore/mcmc_visualization_tools.R", local=util)
+source("MCMC_tools/mcmc_analysis_tools_rstan.R", local=util)
+source("MCMC_tools/mcmc_visualization_tools.R", local=util) 
+#the second source leads to an error, I think not serious but we'll see
 
 # Data import -------------------------------------------------------------
 
-
 seed_data<-read.csv("Data/SeedData_all.csv")
 
-# 1) Keep species I'm interested in :
+# Extract data to analyze--------------------------------------------------
+
+# Step 1: Extract data for species sufficiently abundant to analyze:
 seed_data<-seed_data %>%
   filter(spp %in% c("ABAM","ABLA","CANO","PSME","TSHE","TSME","THPL"))
-unique(seed_data$stand)
-#I include ABLA now
+unique(seed_data$stand) #check all stands available
 
-# Extra stand
-# Add SPRY, SUNR, PARA for CANO, ABAM, ABLA
+# Step 2: Extract high elevation stands (start in 2009)
+
+# This data gets put into extra_stands file
+# Data from SPRY, SUNR, PARA for CANO, ABAM, ABLA
+# JHRL question - why not TSME?
 extra_stands <- seed_data %>%
   filter(spp %in% c("CANO", "ABAM", "ABLA"),
          stand %in% c("SPRY", "SUNR", "PARA")) %>%
@@ -63,14 +73,17 @@ extra_stands <- seed_data %>%
     .groups = "drop"
   ) %>%
   arrange(spp, stand, year)
-# Checking
+
+# Reality check - what did I extract
 extra_stands %>%
   group_by(spp, stand) %>%
   summarise(n_years = n(), mean_density = mean(y/area), .groups = "drop")
 
 
-# 2) Removing invalid stands 
-stands_per_species <- readRDS("data/stands_per_species.rds")#from General.Data.R
+# Step 3: Remove stands where species are not present
+# JHRL question: what is an RDS file? Why not csv, or do this in R?
+# in general, more notes are needed here to show what is done
+stands_per_species <- readRDS("Data/stands_per_species.rds")#from General.Data.R
 stands_long <- stands_per_species %>%
   unnest(stands) %>%
   rename(spp = species,
@@ -81,9 +94,8 @@ seed_filtered <- seed_data %>%
 
 str(seed_filtered)
 
-
-
-# Data prep ---------------------------------------------------------------
+# Step 4: Remove 2008 data
+# This since data collection for all stands started in 2009
 
 stand_year_all <- seed_filtered %>%
   filter(year != 2009) %>% #because like this they start all the same year
@@ -95,11 +107,12 @@ stand_year_all <- seed_filtered %>%
   ) %>%
   arrange(spp, stand, year)
 
+#merge extra-stands from here
 stand_year_all <- bind_rows(stand_year_all, extra_stands) %>%
   arrange(spp, stand, year)
 
-# stand_year_all <- stand_year_all %>%
-#   filter(!(stand == "SUNR" & year == 2024))
+# Step 5: Add NA's for SUNR 2023
+# note all samples from all traps missing in that stand and year
 
 missing_rows <- tibble(
   spp   = c("ABAM", "ABLA", "CANO"),
@@ -109,18 +122,21 @@ missing_rows <- tibble(
   area  = NA_real_
 )
 
+# merge missing_rows (SUNR data) to data file
 stand_year_all <- bind_rows(stand_year_all, missing_rows) %>%
   group_by(spp, stand) %>%
   mutate(area = ifelse(is.na(area), mean(area, na.rm = TRUE), area)) %>%
   ungroup() %>%
   arrange(spp, stand, year)
 
+# JHRL Is this correct? Is this replacing NA's with zeros for SUNR? That seems incorrect...
 obs_missing <- as.integer(is.na(stand_year_all$y))
 
 stand_year_all <- stand_year_all %>%
   mutate(y = ifelse(is.na(y), 0L, as.integer(y)))
 
-#Defining my stan list
+
+# Defining input to STAN model -------------------------------------------------
 # Species index
 stand_year_all$species_id <- as.numeric(as.factor(stand_year_all$spp))
 S <- length(unique(stand_year_all$spp)) #which is 7 at the moment
@@ -170,11 +186,18 @@ print (stan_data_all)
 
 # Fitting Model -----------------------------------------------------------
 #Current model used after discussion in git
+#JHRL - had to download Rtools45 (for updated R package build)
+#Rtools45 is now users/jannekeh/documents (cannot be in C: or programs: without permission)
+#JHRL pulled the code below from internet - should check before running
+
+writeLines('PATH="C:\\Users\\jannekeh\\Documents\\rtools45\\usr\\bin;${PATH}"', con = "~/.Renviron")
+
+
 fit_75 <- stan(
-  file    = "Stan_code_Eleonore/Species_Stan_Model/MultispeciesStanCodeLast.stan",
+  file    = "MultispeciesStanCodeLast.stan",
   data    = stan_data_all,
   iter    = 4000, #change based on how much iterations you need
-  warmup  = 2000, #make the warmup longer 
+  warmup  = 2000, #burnin 
   chains  = 4,
   seed    = 123,
 )
