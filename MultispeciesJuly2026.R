@@ -33,7 +33,7 @@ library(posterior)
 library(purrr)
 library(patchwork) 
 library(colormap) #for Betancourt source code
-#library(cmdstanr) #newer version of stan, do not run
+#library(cmdstanr) #newer version of stan, do not run (according to Lizzie)
 
 #had to download rtools45, and configure R to find rtools both in bin and in the mingw bin. 
 #only needed to do this once (I hope)
