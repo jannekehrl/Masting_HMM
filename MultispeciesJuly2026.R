@@ -16,9 +16,10 @@
 
 ##Additional packages I had to install
 #install.packages("colormap")
-#install.packages("cmdstanr", repos = c('https://stan-dev.r-universe.dev', getOption("repos")))
-#check_cmdstan_toolchain(fix = TRUE) to check compilers
-#install_cmdstan(cores = 2) #this did not work but skipped because just installed cmdstanr!
+#installed rtool45 (on C:) and pointed R towards it (changed .Renviron file)
+#pointed to C14 compiler for Rstan (created a Makevars.win file with CXX17STD = -std=gnu++14)
+#added that to my documents folder (no .R folder)
+#try again tomorrow as of October 26
 
 ## To do - add brief notes about libraries
 ## some warnings about conflicts (same function names in 2 packages, masking)
@@ -205,8 +206,8 @@ fit_75 <- stan(
   iter    = 4000, #change based on how much iterations you need
   warmup  = 2000, #burnin 
   chains  = 4,
-  seed    = 123,
-)
+  seed    = 123
+  )
 
 # PPC ---------------------------------------------------------------------
 
