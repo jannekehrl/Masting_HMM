@@ -221,6 +221,9 @@ fit_75 <- stan(
   , verbose = TRUE
   )
 
+##Can run 1 chain and multiple chains. Multiple chains generates some errors.
+##One possible solution - specify initials?
+
 # PPC ---------------------------------------------------------------------
 
 #Overall
