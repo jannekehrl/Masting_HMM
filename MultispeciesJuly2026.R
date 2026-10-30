@@ -14,12 +14,13 @@
 #4 : Calculate total seed production per stand and year
 #5 : Expand model at the trap level
 
-##Additional packages I had to install
-#install.packages("colormap")
+##Additional packages I had to install, steps to take
+#install.packages("colormap") (for Mikes programs)
+#to interface with rstan
 #installed rtool45 (on C:) and pointed R towards it (changed .Renviron file)
-#pointed to C14 compiler for Rstan (created a Makevars.win file with CXX17STD = -std=gnu++14)
-#added that to my documents folder (no .R folder)
-#try again tomorrow as of October 26
+#Uninstalled and reinstalled rstan and StanHeaders 
+#updated Rcpp, RcppEigen, RcppParallel (not sure all was necessary)
+#NB - fussed around with the makevars.win file, but ulimately most of what I added cause more problems than not
 
 ## To do - add brief notes about libraries
 ## some warnings about conflicts (same function names in 2 packages, masking)
@@ -27,6 +28,7 @@
 library(dplyr)
 library(ggplot2)
 library(rstan)
+#library(StanHeaders)
 library(tidyr)
 library(bayesplot)
 library(tidyverse)
@@ -203,10 +205,19 @@ print (stan_data_all)
 fit_75 <- stan(
   file    = "MultispeciesStanCodeLast.stan",
   data    = stan_data_all,
-  iter    = 4000, #change based on how much iterations you need
-  warmup  = 2000, #burnin 
-  chains  = 4,
-  seed    = 123
+  ##1) for trouble shooting stan errors, run these lines
+  chains = 1,               # ONLY RUN ONE CHAIN
+  cores = 1,                # FORCE SEQUENTIAL RUNNING (No parallel processing)
+  verbose = TRUE,           #print out error message
+  refresh = 25,             # force a regular update
+  warmup  = 1000,           # burnin 
+  iter = 10000,               # Lower the iterations so you don't wait hours
+  ##2) run these lines for final model fitting
+  #iter    = 4000, #change based on how much iterations you need
+  #warmup  = 2000, #burnin 
+  #chains  = 4,
+  #seed    = 123,
+  #refresh = 500   # <-- Prints a status update every 50 iterations!
   )
 
 # PPC ---------------------------------------------------------------------
