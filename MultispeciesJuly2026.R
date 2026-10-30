@@ -206,18 +206,19 @@ fit_75 <- stan(
   file    = "MultispeciesStanCodeLast.stan",
   data    = stan_data_all,
   ##1) for trouble shooting stan errors, run these lines
-  chains = 1,               # ONLY RUN ONE CHAIN
-  cores = 1,                # FORCE SEQUENTIAL RUNNING (No parallel processing)
-  verbose = TRUE,           #print out error message
-  refresh = 25,             # force a regular update
-  warmup  = 1000,           # burnin 
-  iter = 10000,               # Lower the iterations so you don't wait hours
+  #chains = 1,               # ONLY RUN ONE CHAIN
+  #cores = 1,                # FORCE SEQUENTIAL RUNNING (No parallel processing)
+  #verbose = TRUE,           #print out error message
+  #refresh = 25,             # force a regular update
+  #warmup  = 1000,           # burnin 
+  #iter = 10000,               # Lower the iterations so you don't wait hours
   ##2) run these lines for final model fitting
-  #iter    = 4000, #change based on how much iterations you need
-  #warmup  = 2000, #burnin 
-  #chains  = 4,
-  #seed    = 123,
-  #refresh = 500   # <-- Prints a status update every 50 iterations!
+  iter    = 8000, #change based on how much iterations you need
+  warmup  = 3000, #burnin 
+  chains  = 4,
+  seed    = 123,
+  refresh = 100   # <-- Prints a status update every 50 iterations!
+  , verbose = TRUE
   )
 
 # PPC ---------------------------------------------------------------------
