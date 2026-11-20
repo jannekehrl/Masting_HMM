@@ -58,7 +58,7 @@ list.files("MCMC_tools/")
 util <- new.env()
 source("MCMC_tools/mcmc_analysis_tools_rstan.R", local=util)
 source("MCMC_tools/mcmc_visualization_tools.R", local=util) 
-#the second source leads to an error, I think not serious but we'll see
+#ignore error in second, about mcmc_visualization_tools.R
 
 # Data import -------------------------------------------------------------
 
@@ -217,8 +217,8 @@ fit_75 <- stan(
   warmup  = 3000, #burnin 
   chains  = 4,
   seed    = 123,
-  refresh = 100   # <-- Prints a status update every 50 iterations!
-  , verbose = TRUE
+  refresh = 100   
+  #, verbose = TRUE
   )
 
 ##Can run 1 chain and multiple chains. Multiple chains generates some errors.
