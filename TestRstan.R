@@ -1,5 +1,5 @@
 ## Simple R script to test Rstan installation
-## Can use
+## To test
 
 ##What versions of stan packages?
 packageVersion("rstan")
