@@ -1,27 +1,37 @@
-##Code for Manuscript : Community-wide masting in coniferous forests (for example)
+##Code for Manuscript : Community-wide masting in coniferous forests
 
 ##Last updated : 12.11.2026
 ##Eléonore Perret 
 ##ETH Zürich
 
+#Code fits stan model to seed production data (Stan code : MultispeciesStanCodeLast.stan)
+#HMM model with two states (high / mast, low seed production)
+#Seed production in each state defined by a NB distribution
+#This model is fit to multiple species at multiple stands
 
-#HMM model with two states each defined by a NB distribution (stan code : MultispeciesStanCodeLast.stan)
+##JHRL - comment 1 (can remove these sentences afterwards)
+# I made some minor edits above and below (added some detail)
+# Some comments (in 1-11 below) are too long, and provide a lot of detail hard to follow
+# Suggestions for comment 1:
+     # A) move the explanations of what you did to the part of the code where you did it
+     # B) make the comments shorter (can have multiple lines to explain)
+     # C) before we publish make sure to remove notes to each other / your self
 
-##Structure of the code 
+##Structure of this code
 
 ###IMPORTANT. Before running the code, please make sure that you have installed Stan on your computer (https://mc-stan.org/install/)
 ### Section 5-8 are model verifications no not necessary to run if interested at only the results. 
 ### I usually save my plots and tables, now it is all in # so you can remove it and add it to the folder of your choice if you want to save it. But please do not save in the environement I'm using now so I know that all the plots that are there I made them for the moment :)
 
-##1. Libraries needed + setting working directory +Loading Mike's code
+##1. Libraries needed + setting working directory + Loading code from Mike Betancourt
 
-##2. Data import + modifications : Data needed to be added from the trees as not all the trees are present at each site and also data from the stand not surveyed by the PSP (SUNR, PARA and SPRY).Also adding the elevation. 
+##2. Data import + modifications (retaining only species-stand combinations where adult trees present)
 
 ##3. Data preparation for Stan
 
-##4. Model fitting (fitting the model with stan) : this can take up to 20 min., double check line #43 is run for faster computational time)
+##4. Model fitting (using rstan): this can take up to 20 min., double check line #43 is run for faster computational time)
 
-##5. Model diagnostic : model convergence (~is there divergence?) , parameters (~Rhat, ESS = did the chains converge? I can also add trace plots which are also a standard way for showing chain convergence), model summary,  ppc (is my model following the observed seed production).  
+##5. Model diagnostic : model convergence (checks for divergence), outputs metrics (~Rhat, ESS = did the chains converge? I can also add trace plots which are also a standard way for showing chain convergence), model summary,  ppc (is my model following the observed seed production).  
 
 ##6. State assignments : This is also a form of model diagnostic. Deserve its section as need to check for species and stands. Also available in this section is the state assignement combined with the observed seed production
 
@@ -37,6 +47,10 @@
 
 
 
+## JHRL comment 2: 
+# for the final version you should remove the code below (about Rtools)
+# Even if others have the same problem, the solution could be different (mine is)
+# And the solution could change over time
 
 # 1. Library + Working directory + Mike's code-----------------------------------------------------------------
 
@@ -46,11 +60,15 @@
 # Sys.unsetenv("PKG_CPPFLAGS")   # clears leftover Stan flags from an earlier rstan load
 
 
+## JHRL comment 3: 
+# are you sure about needing cmdstanr? I thought we should only use rstan
+# the code below worked without my loading cmdstanr
+
 #Libraries
 library(dplyr)
 library(ggplot2)
-library(cmdstanr)
-library(rstan)
+# library(cmdstanr) 
+library(rstan) 
 library(tidyr)
 library(bayesplot)
 library(tidyverse)
@@ -61,34 +79,54 @@ library(ggrepel)
 
 options(mc.cores = parallel::detectCores()) ##Important to run my code faster
 
+##JHRL comment 4:
+#Suggestion A)
+#maybe you don't have to set a directory twice
+#set the main directory
+#have subfolders (e.g. data, MCMC_tools, output - names could be different)
+#use paths to read / write to those subfolders
+#the code below works for me (mikes code in MCMC_tools, data in Data)
 
 #Setting working directory 
-getwd()
-setwd("C:/Users/eperret/polybox - Eleonore Perret (eleonore.perret@usys.ethz.ch)@polybox.ethz.ch/phD/PhD/R/Masting_UBC/Masting") #please use your own working directory
+#getwd()
+#setwd("C:/Users/eperret/polybox - Eleonore Perret (eleonore.perret@usys.ethz.ch)@polybox.ethz.ch/phD/PhD/R/Masting_UBC/Masting") #please use your own working directory
+setwd("C:/Users/jannekeh/Documents/GitHub/Masting_HMM")
 
 #Loading Mike's code ( this is how I have it, but afterwards it will be stored in the github or Dryad into its own section)
-setwd("Rscript_AnalysisEleonore/") 
+#setwd("Rscript_AnalysisEleonore/") 
 #install.packages("colormap") #if not already installed
 util <- new.env() #to import the R code from Mike that I have on the Rscript Analysis Eleonore folder, this is in the github repo : Masting\Rscript_AnalysisEleonore\"
-source("mcmc_visualization_tools.R", local=util)
-source("mcmc_analysis_tools_rstan.R", local=util)
+source("MCMC_tools/mcmc_visualization_tools.R", local=util)
+source("MCMC_tools/mcmc_analysis_tools_rstan.R", local=util)
 ls(util)
 
 #I have to redo this so that afterwards I'm in the overall masting repo.
-setwd("C:/Users/eperret/polybox - Eleonore Perret (eleonore.perret@usys.ethz.ch)@polybox.ethz.ch/phD/PhD/R/Masting_UBC/Masting")
+#setwd("C:/Users/eperret/polybox - Eleonore Perret (eleonore.perret@usys.ethz.ch)@polybox.ethz.ch/phD/PhD/R/Masting_UBC/Masting")
 
 # 2. Data import + modification -------------------------------------------------------------
 seed_data<-read.csv("Data/SeedData_all.csv") #the merged seed data created by Janneke
 
-# 1) Keeping species I'm interested in :
+# 1) Keeping only species sufficiently abundant for model fitting
 seed_data<-seed_data %>%
   filter(spp %in% c("ABAM","ABLA","CANO","PSME","TSHE","TSME","THPL"))
 
 unique(seed_data$stand)
 
-# 2) I want only possible combination of stands (ie. for CANO I don't want it at low elevation stands)
-# a) Extra stand (to add manually as there is no map/records of the species present at SPRY, PARA and CANO as it was not installed by the PSP crew but Janneke)
-# Add SPRY, SUNR, PARA for CANO, ABAM, ABLA
+##JHRL Comment 4
+#Suggestion A) Lets create a file from PSP & other info I have (for PARA, SPRY, SUNR),
+#that creates a table of stand by species basal area / hectare. 
+#Then this table can be read in, and this will simplify the code here
+#Can also include elevation of stand in that file if needed
+#this can happen later
+#Suggestion B) I am not sure what an RDS file is, maybe better to use csv
+#Suggestion C) It might make sense to change the order of 2a and 2b (below)
+#First extract stand / species combinations using PSP
+#Then add back stand / species combinations not PSP (PARA, SPRY, SUNR)
+
+
+# 2) Extract stands where species occur as adult trees (from PSP records)
+# a) There are three stands without mapped tree data (PARA, SPRY, SUNR)
+# We first extract species in these stands (extra_stands)
 extra_stands <- seed_data %>%
   filter(spp %in% c("CANO", "ABAM", "ABLA"),
          stand %in% c("SPRY", "SUNR", "PARA")) %>%
@@ -96,7 +134,7 @@ extra_stands <- seed_data %>%
   group_by(spp, stand, year) %>%
   summarise(y = sum(total_viable_sds, na.rm = TRUE),area = sum(size, na.rm = TRUE),.groups = "drop") %>%
   arrange(spp, stand, year)
-# Checking
+# Checking that extracted data is as expected
 extra_stands %>%
   group_by(spp, stand) %>%
   summarise(n_years = n(), mean_density = mean(y/area), .groups = "drop")
@@ -112,8 +150,11 @@ extra_stands %>%
 # Saving the object (I prefer this way but can be done also directly)
 #saveRDS(stands_per_species, file = "data/stands_per_species.rds") 
 
+##JHRL Comment 5
+#Be consistent with data and Data folders (capitalize)
+
 #c) Adding only the possible combination of species x stands
-stands_per_species <- readRDS("data/stands_per_species.rds")
+stands_per_species <- readRDS("Data/stands_per_species.rds")
 stands_long <- stands_per_species %>%
   unnest(stands) %>%
   rename(spp = species,stand = stands)
@@ -124,28 +165,39 @@ seed_filtered <- seed_data %>%
 str(seed_filtered)
 #Seeds_filtered contains now all the species x stand combination 
 
+
+##JHRL Comment 6
+#For final code to post, lets remove these commented code lines (repetitive)
+
 #d)Stand elevation #saved stand elevation
-stands_per_species <- readRDS("data/stands_per_species.rds")
+#stands_per_species <- readRDS("data/stands_per_species.rds")
 # stand_elev <- data.frame(
 #   stand = c("TO11","TO04","TA01","AV02","AE10","TB13","AO03","AG05","AV06","AX15","AB08","PP17","AV14","AM16","AR07","PARA"  ,"SPRY","SUNR"),
 #   elevation = c(600,668,700,850,1450,850,900,950,1060,1090,1100,1150,1150,1200,1450,1600,1700,1800))
 # saveRDS(stand_elev, file= "data/stand_elevation_table.rds")
 
 
+##JHRL Comment 7
+#I've added more explanation for these steps
+
 # 3. Data prep for Stan ---------------------------------------------------------------
 
-#Removing year 2009, and merging all seed counts
+#First remove year 2009 seed data - since not collected for all stands
 stand_year_all <- seed_filtered %>%
   filter(year != 2009) %>% #because like this they start all the same year
   group_by(spp, stand, year) %>%
   summarise(y= sum(total_viable_sds, na.rm = TRUE),area = sum(size, na.rm = TRUE),.groups = "drop") %>%
   arrange(spp, stand, year)
 
-#Adding the data from SUNR, SPRY and PARA
+##JHRL Comment 8
+#with a .csv file of elevation / species presence, this step can be removed
+#Next combine with data from non PSP stands
 stand_year_all <- bind_rows(stand_year_all, extra_stands) %>%
   arrange(spp, stand, year)
 
-#As I have a year missing for SUNR. 
+#A year of data is missing for SUNR
+#This needs to be specified
+#first create object missing rows
 missing_rows <- tibble(
   spp   = c("ABAM", "ABLA", "CANO"),
   stand = "SUNR",
@@ -154,12 +206,17 @@ missing_rows <- tibble(
   area  = NA_real_
 )
 
-#Adding the missing year to the dataset
+#now add the object to the full data set
 stand_year_all <- bind_rows(stand_year_all, missing_rows) %>%
   group_by(spp, stand) %>%
   mutate(area = ifelse(is.na(area), mean(area, na.rm = TRUE), area)) %>%
   ungroup() %>%
   arrange(spp, stand, year)
+
+##JHRL Comment 8
+#This more a question - NA's should not automatically be modeled as zeros!
+#Is this accounted for later?
+
 
 #Checking where I have missing "y" (sum of seed count)
 obs_missing <- as.integer(is.na(stand_year_all$y))
@@ -189,6 +246,9 @@ T_i        <- years_per_series$T_i
 start_idxs <- cumsum(c(1, T_i[-G])) 
 end_idxs   <- cumsum(T_i)
 
+##JHRL Comment 9
+#Some of the headers below need a bit more detail (e.g. checking for what?)
+
 # Checking everything
 cat("N =", nrow(stand_year_all), "\n")
 cat("F =", G, "\n")
@@ -213,6 +273,10 @@ stan_data_all <- list(
 )
 
 print (stan_data_all)
+
+##JHRL Comment 10
+#Minor, but why call it fit75?
+
 
 # 4. Fitting Model -----------------------------------------------------------
 #Current model #takes around 20 min to run. 
