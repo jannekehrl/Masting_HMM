@@ -32,7 +32,7 @@ if (file.exists('mcmc_analysis_tools_rstan.R')) {
 } else if (file.exists('mcmc_analysis_tools_other.R')) {
   source('mcmc_analysis_tools_other.R', local=util)
 } else {
-  stop(paste0('mcmc_visualization_tools.R requires that ',
+  stop(print0('mcmc_visualization_tools.R requires that ',
               'mcmc_analysis_tools_[rstan/other].R from ',
               'https://github.com/betanalpha/mcmc_diagnostics ',
               'is available.'))

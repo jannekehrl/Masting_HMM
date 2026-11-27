@@ -9,18 +9,19 @@
 #Seed production in each state defined by a NB distribution
 #This model is fit to multiple species at multiple stands
 
-##JHRL - comment 1 (can remove these sentences afterwards)
+##JHRL - comment 1 (remove these after implementing suggestions)
 # I made some minor edits above and below (added some detail)
-# Some comments (in 1-11 below) are too long, and provide a lot of detail hard to follow
-# Suggestions for comment 1:
-     # A) move the explanations of what you did to the part of the code where you did it
-     # B) make the comments shorter (can have multiple lines to explain)
-     # C) before we publish make sure to remove notes to each other / your self
+# These comments serve 2 purposes - notes for you, but also to help coauthors and eventual future users understand and apply (e.g. other data)
+# Many of your comments are clearly useful for you, but often too long / detailed for coauthors / eventual users
+# General suggestions (but also for the notes under Structure of this code):
+     # A) Include more explanation that is generic (why you are doing x and y, not specific to this data set)
+     # B) Make lines shorter (so people don't have to scroll right so far)
+     # C) Below in particular, move some description to part of code where applicable
 
 ##Structure of this code
 
 ###IMPORTANT. Before running the code, please make sure that you have installed Stan on your computer (https://mc-stan.org/install/)
-### Section 5-8 are model verifications no not necessary to run if interested at only the results. 
+### Section 5-8 are model verifications so not necessary to run if interested at only the results. 
 ### I usually save my plots and tables, now it is all in # so you can remove it and add it to the folder of your choice if you want to save it. But please do not save in the environement I'm using now so I know that all the plots that are there I made them for the moment :)
 
 ##1. Libraries needed + setting working directory + Loading code from Mike Betancourt
@@ -50,7 +51,7 @@
 ## JHRL comment 2: 
 # for the final version you should remove the code below (about Rtools)
 # Even if others have the same problem, the solution could be different (mine is)
-# And the solution could change over time
+# And the solution could change over time! But you probably want to keep for now
 
 # 1. Library + Working directory + Mike's code-----------------------------------------------------------------
 
@@ -61,8 +62,8 @@
 
 
 ## JHRL comment 3: 
-# are you sure about needing cmdstanr? I thought we should only use rstan
-# the code below worked without my loading cmdstanr
+# Are you sure about needing cmdstanr? I thought we should only use rstan
+# I got through the first diagnostics and did not need cmdstanr
 
 #Libraries
 library(dplyr)
@@ -80,12 +81,14 @@ library(ggrepel)
 options(mc.cores = parallel::detectCores()) ##Important to run my code faster
 
 ##JHRL comment 4:
-#Suggestion A)
-#maybe you don't have to set a directory twice
-#set the main directory
-#have subfolders (e.g. data, MCMC_tools, output - names could be different)
-#use paths to read / write to those subfolders
-#the code below works for me (mikes code in MCMC_tools, data in Data)
+#Suggestion
+# If you can make your code tidier (less redundant) it is easier to follow
+# For example, I think you don't need to set directory twice (this is confusing)
+# I would set the main directory once (explain what you are doing)
+# Then have subfolders (e.g. data, MCMC_tools, output - names could be different)
+# Explain this structure when setting the directory, so users can easily replicate
+# Use paths to read / write to those subfolders
+# I modified below, this works for me but maybe not for you
 
 #Setting working directory 
 #getwd()
@@ -96,8 +99,8 @@ setwd("C:/Users/jannekeh/Documents/GitHub/Masting_HMM")
 #setwd("Rscript_AnalysisEleonore/") 
 #install.packages("colormap") #if not already installed
 util <- new.env() #to import the R code from Mike that I have on the Rscript Analysis Eleonore folder, this is in the github repo : Masting\Rscript_AnalysisEleonore\"
-source("MCMC_tools/mcmc_visualization_tools.R", local=util)
 source("MCMC_tools/mcmc_analysis_tools_rstan.R", local=util)
+source("MCMC_tools/mcmc_visualization_tools.R", local=util, chdir = TRUE)
 ls(util)
 
 #I have to redo this so that afterwards I'm in the overall masting repo.
@@ -113,15 +116,15 @@ seed_data<-seed_data %>%
 unique(seed_data$stand)
 
 ##JHRL Comment 4
-#Suggestion A) Lets create a file from PSP & other info I have (for PARA, SPRY, SUNR),
-#that creates a table of stand by species basal area / hectare. 
-#Then this table can be read in, and this will simplify the code here
-#Can also include elevation of stand in that file if needed
-#this can happen later
-#Suggestion B) I am not sure what an RDS file is, maybe better to use csv
-#Suggestion C) It might make sense to change the order of 2a and 2b (below)
-#First extract stand / species combinations using PSP
-#Then add back stand / species combinations not PSP (PARA, SPRY, SUNR)
+#Suggestion A) 
+# We / you should create a .csv file with stand by species basal area
+# I think you have done this for PSP, but we also have data (1x) for SUNR, SPRY, PARA
+# SUNR / SPRY / PARA is in Masting / data / rawdata (its an excel),
+# You could also include elevation
+# This .csv can be read in, and this will simplify the code in many places
+#Suggestion B) I am not sure what an RDS file is, better to use csv
+#Suggestion C) I would change order of 2a and 2b, but once you have A) you will no longer need this
+
 
 
 # 2) Extract stands where species occur as adult trees (from PSP records)
@@ -139,6 +142,11 @@ extra_stands %>%
   group_by(spp, stand) %>%
   summarise(n_years = n(), mean_density = mean(y/area), .groups = "drop")
 
+##JHRL Comment 6
+# You have a lot of commented out code (e.g. b and d below, but also later)
+# For eventual posting of code (also easier for commenting by coauthors), remove
+# Either you need the lines to run the code, or not - best to rerun.
+
 # b) Getting the information from the PSP data #remove commented lines if needed to run/save again.
 # mapRainier<-read.csv("data/rawdata/Cleaned_mapping_2017 Rainier.csv", sep=";")
 # 
@@ -150,8 +158,8 @@ extra_stands %>%
 # Saving the object (I prefer this way but can be done also directly)
 #saveRDS(stands_per_species, file = "data/stands_per_species.rds") 
 
-##JHRL Comment 5
-#Be consistent with data and Data folders (capitalize)
+##JHRL Comment 6 (quite minor)
+#Be consistent with data and Data folders (capitalize), less confusing for readers
 
 #c) Adding only the possible combination of species x stands
 stands_per_species <- readRDS("Data/stands_per_species.rds")
@@ -164,10 +172,6 @@ seed_filtered <- seed_data %>%
 
 str(seed_filtered)
 #Seeds_filtered contains now all the species x stand combination 
-
-
-##JHRL Comment 6
-#For final code to post, lets remove these commented code lines (repetitive)
 
 #d)Stand elevation #saved stand elevation
 #stands_per_species <- readRDS("data/stands_per_species.rds")
@@ -190,7 +194,7 @@ stand_year_all <- seed_filtered %>%
   arrange(spp, stand, year)
 
 ##JHRL Comment 8
-#with a .csv file of elevation / species presence, this step can be removed
+#with a .csv file of elevation / species presence (see comment 4), this step can be removed
 #Next combine with data from non PSP stands
 stand_year_all <- bind_rows(stand_year_all, extra_stands) %>%
   arrange(spp, stand, year)
@@ -214,8 +218,8 @@ stand_year_all <- bind_rows(stand_year_all, missing_rows) %>%
   arrange(spp, stand, year)
 
 ##JHRL Comment 8
-#This more a question - NA's should not automatically be modeled as zeros!
-#Is this accounted for later?
+#This more a question - NA's should not be modeled as zeros
+#I think thiss this accounted for in stan differently (e.g. in obs_missing in stan code)?
 
 
 #Checking where I have missing "y" (sum of seed count)
@@ -248,6 +252,7 @@ end_idxs   <- cumsum(T_i)
 
 ##JHRL Comment 9
 #Some of the headers below need a bit more detail (e.g. checking for what?)
+#checking everything is not very specific!
 
 # Checking everything
 cat("N =", nrow(stand_year_all), "\n")
@@ -275,16 +280,18 @@ stan_data_all <- list(
 print (stan_data_all)
 
 ##JHRL Comment 10
-#Minor, but why call it fit75?
+#Minor, but why call it fit75? maybe Final_fit?
+#Also, the model took longer for me, maybe best not to specify time
 
 
 # 4. Fitting Model -----------------------------------------------------------
 #Current model #takes around 20 min to run. 
 fit_75 <- stan(
-  file    = "Stan_code_Eleonore/Species_Stan_Model/MultispeciesStanCodeLast.stan",
+  file    = "Updated/MultispeciesStanCodeLast.stan",
+  #file    = "Stan_code_Eleonore/Species_Stan_Model/MultispeciesStanCodeLast.stan",
   data    = stan_data_all,
-  iter    = 4000, #change based on how much iterations you need
-  warmup  = 2000, #make the warmup longer 
+  iter    = 4000, #number of iterations
+  warmup  = 2000, #length of warmup 
   chains  = 4,
   seed    = 123,
 )
@@ -292,15 +299,31 @@ fit_75 <- stan(
 
 # 5. Model diagnostic --------------------------------------------------------
 
+##JHRL Comment 10
+#A) A good option would be to write fit75 (or whatever you call it) to your output, saving it
+# This way you can have a statement to either read it in, or run the code
+# I suspect this is better than saving it in your environment
+#B) For both summary(fit_75) and print(fit_75), not all rows are printed
+# - possibility 1 print these tables to a .csv (e.g. in output), so someone can use
+# - possibility 2 alternatively, extract Rhats> some threshold (1.2?)
+#C) I'm not sure what ESS is (not in any heade), define?
+
+
 ## a. Overall summary of the model fit. Here we can check for ESS (not bigger than the parameters themselves?) and Rhat (~1) values. 
 summary(fit_75)
 print(fit_75)
+
 
 ## b. Is the model good?
 #Using Mike's function to check the fit of the model (if warning message, like divergence it would appear here)
 diagnostics <- util$extract_hmc_diagnostics(fit_75) 
 util$check_all_hmc_diagnostics(diagnostics)
 #All is good. 
+
+
+##JHRL Comment 11
+#A) Add a bit of information on what checks are being done with mikes functions.
+#B) Also, for other users of code comments like "All is good" may not apply so eventually remove
 
 ## c. We can check now the model parameters using Mike's function. 
 samples <- util$extract_expectand_vals(fit_75)
@@ -326,12 +349,26 @@ model_table_summary<-as.data.frame(summary_model)%>% #model summary into a table
 model_table_summary #checking
 #write.table(model_table_summary, file = 'data/Tables/model_table_summary.txt', col.names = TRUE,row.names = FALSE, sep = "\t")
 
+
+##JHRL Comment 12
+#With a long script, it's hard to follow where you are (there are multiple a, b, c, ds)
+#Suggestion A) Use numbers again (e.g. 5e rather than 3), and make sure they are in the right order
+# Also, is this #8 from your outline above? Or still diagnostics (5)?
+#Suggestion B) 
+# Start every 'new' section of code with something like below, easy to find
+# I actually see you have something like it below (long line -----), more would be good
+
+#############################################################
+###                      Model Diagnostics               ###
+############################################################
+
+
 #But is the model fitting our data? 
 
 ## e. Checking the PPC. 
 #This allows us to know if the generated quantiles from the model match our actual data. 
 
-# samples<-util$extract_expectand_vals(fit_75) #Not necessary if done in the previous step
+#samples<-util$extract_expectand_vals(fit_75) #Not necessary if done in the previous step
 #Overall fit: PPC
 par(mfrow = c(1,1))
 util$plot_hist_quantiles(samples, "y_rep",bin_min = 0, bin_max = 600, bin_delta = 20,baseline_values = stan_data_all$y)
@@ -359,6 +396,15 @@ util$plot_hist_quantiles(samples, "y_rep",bin_min = 0, bin_max = 600, bin_delta 
 #Everything looks good :) 
 
 #Now we can go into the next step of checking the state identification. Does the model assign correctly the states (low and high?) and does it matches our data? 
+
+
+#JHRL Comment 13
+#There are a lot of plots, which makes the script hard to follow
+#It's also hard to know why some should be looked at
+#Suggestion A) 1-2 more lines about what each group of plots shows
+#Suggestion B) Only include plots you will put in the manuscript or supplement 
+#Suggestion C) code for extra plots and commented out code - delete OR move to end
+# Add a section ###EXTRA CODE### at the end if you want to keep, so reviewers know they can stop
 
 
 # 6. State assignement -------------------------------------------------------
@@ -389,7 +435,7 @@ stand_year_all%>%
 # }
 
 #b) seperated state assignements
-#the state assigment for each species at each stands. 
+#the state assigment for each species at each stands.
 for (f in 1:length(stan_data_all$start_idxs)) {
   start_id <- stan_data_all$start_idxs[f]
   end_id   <- stan_data_all$end_idxs[f]
@@ -405,10 +451,17 @@ for (f in 1:length(stan_data_all$start_idxs)) {
 spp_f<-as.character(stand_year_all$spp[stan_data_all$start_idxs])
 st_f<-as.character(stand_year_all$stand[stan_data_all$start_idxs])
 
+##JHRL comment 14
+#I added dev.new so the plots come out (easier to see on a laptop)
+#Suggestion A) print all the plots to an output folder?
+#Question there are some species / stand combinations I am not sure of: TSME in TO04, CANO AX15
+
+
 #THose plots are the species observed seed production vs the model predicted seed production. 
 #You can decide to view them either all with the same scale (as I mention above using the display_ylim or at a differnet scale)
 #ABAM
-par(mfrow=c(4,4))
+dev.new(width = 10, height = 7, noRStudioGD = TRUE) #JHRL Added this to view (in all species)
+par(mfrow=c(5,4), omi=c(0,0,0,0), mai=c(0.5,0.5,0.4,0.4))
 for(f in which(spp_f=="ABAM")){
   start_id<-stan_data_all$start_idxs[f]
   end_id<-stan_data_all$end_idxs[f]
@@ -417,6 +470,7 @@ for(f in which(spp_f=="ABAM")){
   points(seq_along(idx),stan_data_all$y[idx], pch=18)
 }
 #ABLA
+dev.new(width = 10, height = 7, noRStudioGD = TRUE) #Added this to view (in all species)
 par(mfrow=c(2,3))
 for(f in which(spp_f=="ABLA")){
   start_id<-stan_data_all$start_idxs[f]
@@ -426,6 +480,7 @@ for(f in which(spp_f=="ABLA")){
   points(seq_along(idx),stan_data_all$y[idx], pch=18)
 }
 #CANO #for this one, it could be better not setting the same scale. 
+dev.new(width = 10, height = 7, noRStudioGD = TRUE)
 par(mfrow=c(3,4))
 for(f in which(spp_f=="CANO")){
   start_id<-stan_data_all$start_idxs[f]
@@ -435,6 +490,7 @@ for(f in which(spp_f=="CANO")){
   points(seq_along(idx),stan_data_all$y[idx], pch=18)
 }
 #PSME
+dev.new(width = 10, height = 7, noRStudioGD = TRUE) #Added this to view (in all species)
 par(mfrow=c(4,3))
 for(f in which(spp_f=="PSME")){
   start_id<-stan_data_all$start_idxs[f]
@@ -445,6 +501,7 @@ for(f in which(spp_f=="PSME")){
   points(seq_along(idx),stan_data_all$y[idx], pch=18)
 }
 #TSHE
+dev.new(width = 10, height = 7, noRStudioGD = TRUE) #Added this to view (in all species)
 par(mfrow=c(4,4))
 for(f in which(spp_f=="TSHE")){
   start_id<-stan_data_all$start_idxs[f]
@@ -454,6 +511,7 @@ for(f in which(spp_f=="TSHE")){
   points(seq_along(idx),stan_data_all$y[idx], pch=18)
 }
 #TSME
+dev.new(width = 10, height = 7, noRStudioGD = TRUE) #Added this to view (in all species)
 par(mfrow=c(2,3))
 for(f in which(spp_f=="TSME")){
   start_id<-stan_data_all$start_idxs[f]
@@ -463,6 +521,7 @@ for(f in which(spp_f=="TSME")){
   points(seq_along(idx),stan_data_all$y[idx], pch=18)
 }
 #THPL
+dev.new(width = 10, height = 7, noRStudioGD = TRUE) #Added this to view (in all species)
 par(mfrow=c(4,3))
 for(f in which(spp_f=="THPL")){
   start_id<-stan_data_all$start_idxs[f]
@@ -497,6 +556,10 @@ plot_species_mean <- function(sp, samples, normalise_area = TRUE) {
   points(seq_along(yrs), obs_mean, pch = 18)
 }
 
+##JHRL comment 15
+#These are so many plots... What about instead showing stand-year level predicted vs observed per species? Maybe colors and symbols different
+#Overall, I think these plots looks good but a lot so hard to tell
+
 plot_species_mean("ABAM", samples)
 plot_species_mean("ABLA", samples)
 plot_species_mean("CANO", samples)
@@ -505,6 +568,9 @@ plot_species_mean("TSHE", samples)
 plot_species_mean("TSME", samples)
 plot_species_mean("THPL", samples)
 
+##JHRL comment 16
+#I think this is total seed production per stand, not state?
+#Suggestion  - make sure comment / label accurate
 
 #State identification for the stand 
 #e) stands
@@ -537,7 +603,13 @@ plot_stand_mean("AV06", samples)
 plot_stand_mean("AV06", samples)
 #can do more... if this is something of interest :) 
 
+##JHRL Comment 17
+# I'm not sure if it is of interest? Can be convinced, but need to explain why
 
+
+##JHRL 18
+#I got this far, couldn't finish more
+#I will send you general suggestions (in your google drive box)
 
 
 

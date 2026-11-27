@@ -1,9 +1,11 @@
-/* HMM model for seed production at Mt. Rainier (multispecies)
+/* 
+(NOTE FROM JHRL) - I updated these first lines to provide more info, please (CHECK)
+HMM model for seed production at Mt. Rainier (multispecies)
 Eléonore Perret + Victor Van der Meersch + Elizabeth Wolkovich + Janneke Hille Ris Lambers
 
 August 2026 (Last data modified)
 July 2026 (code last modified)
-October 2026 (comments updated by JHRL, anything in caps and parentheses e.g. (CHECK) denotes something JHRL wants to verify or a question)
+October 2026 (comments updated by JHRL, many in caps / parentheses e.g. (CHECK) 
 
 Data: we have seed production by multiple species (7) in multiple stands (18) over multiple years (2009 - 2024) at MORA.
 
@@ -18,19 +20,19 @@ Model:
 - This can be described by a 2x2 matrix defined by two parameters; the probability of remaining in state 1 when in state 1 (theta1 with 1 - theta1 the probability of transitioning to state 2), and the probability of staying in state 2 when in state 2 (theta2 - with 1 - theta2 the probability of switching to state 1)
 - This also requires parameter rho, the probability of starting in state 1 or state 2 (this is for the first year of data)
 
-Partial pooling:
+Partial pooling: (CHECK)
 - We assume partial pooling for species and stand seed production means. Specifically:
 	- Low state partially pooled = global low mean + species effect + species specific stand effect
 	- High state partially pooled = global low mean + delta (dif masting vs low) species effect + species specific stand effect
 - We assume partial pooling for theta1 and theta2. Specifically:
 	- Theta 1 (prob staying in low state) = global theta1 + species effect (but no stand effect)
 	- Theta 2 (prob staying in high state) = global theta 2 + species effect (but no stand effect)
-- We assume partial pooling of rho by species only (CHECK)
-- We assume partial pooling of variance terms describing mean seed production (variation among species, stands) (CHECK)
+- We assume partial pooling of rho by species only 
+- We assume partial pooling of variance terms describing mean seed production (variation among species, stands) 
 
 Model stability:
 - We used visual plots to diagnose funnelling and centered accordingly
-- We centered... (CHECK and specify)
+- We centered... (CHECK and ADD DETAILS, maybe explain what is centered and not and why?)
 	- area surveyed (which varied year to year) by a baseline, defined as the minimum area surveyed (see transformed data)
 - To ensure that state 1 is always lower than state 2, we specified delta as the difference between the two and forced it to be >0 by fitting on the log scale (CHECK)
 
@@ -53,14 +55,14 @@ data {
 
   array[N] int<lower=0> y;                          // Seed counts
 
-  array[F] int<lower=1> start_idxs;                 // defines start of seed data for a speciesxstand combo (CHECK)
-  array[F] int<upper=N> end_idxs;                   // defines end of seed data for a speciesxstand combo (CHECK)
-  array[F] int<lower=1, upper=N_stands> stand_id;   // numeric id of stand (CHECK)
-  array[F] int<lower=1, upper=S> species_id;        // numeric id of species (CHECK)
+  array[F] int<lower=1> start_idxs;                 // defines start of seed data for a speciesxstand combo
+  array[F] int<upper=N> end_idxs;                   // defines end of seed data for a speciesxstand combo 
+  array[F] int<lower=1, upper=N_stands> stand_id;   // numeric id of stand 
+  array[F] int<lower=1, upper=S> species_id;        // numeric id of species
 
   vector<lower=0>[N] area;                          // area of traps surveyed for a particular species-stand-year combination
   
-  array [N] int <lower= 0, upper = 1> obs_missing;  // vector identifying whether observations are missing (CHECK)
+  array [N] int <lower= 0, upper = 1> obs_missing;  // vector identifying whether observations are missing 
 }
 
 
@@ -78,14 +80,14 @@ transformed data {                                  // for stability, everything
 
 parameters {
   // Initial state probability  
-  simplex[2] rho;                                  // 2x2 matrix to define initial state (QUESTION - by species/ stand same for all?)
+  simplex[2] rho; // 2x2 matrix to define initial state (specify - by species/ stand same for all?)
 
   // Transitions (pooled by species and non-centered) 
-  real                   grand_logit_theta1;       // global mean of theta1 (QUESTION - logit in name, or logit transformation happen here?)
+  real                   grand_logit_theta1;       // global mean of theta1 
   real                   grand_logit_theta2;       // global mean of theta2
 
-  vector[S]              alpha_theta1_species_nc;  // species deviation from the global theta 1, non-centered (QUESTION - should this be centered?)
-  vector[S]              alpha_theta2_species_nc;  // species deviation from the global theta 2, non-centered (QUESTION - should this be centered?)
+  vector[S]              alpha_theta1_species_nc;  // species deviation from the global theta 1, non-centered 
+  vector[S]              alpha_theta2_species_nc;  // species deviation from the global theta 2, non-centered 
   real<lower=0>          sigma_theta1_species;     // variation among species in theta 1
   real<lower=0>          sigma_theta2_species;     // variation among species in theta 2
 
@@ -95,22 +97,22 @@ parameters {
   vector[S]              alpha_low_species;       // species deviation from the low state mean
   real<lower=0>          sigma_low_species;       // variation among species in low state mean
   matrix [S, N_stands]   alpha_stand;             // species-specific stand deviation from the low state mean
-  real <lower=0>         sigma_stand;             // variation among stands (QUESTION - species specific?)
+  real <lower=0>         sigma_stand;             // variation among stands 
 
   // Delta (log-scale gap between states,): grand mean + species effect + stand effect (non-centered)
   real                   mu_log_delta;            // difference between low and high state seed production
   vector[S]              log_delta_species_nc;    // deviation per species in this difference, non-centered
   real<lower=0>          sigma_log_delta_species; // variation among species
   matrix [S, N_stands]   log_delta_stand_nc;      // species-specific deviation per stands non-centered  
-  real <lower=0>         sigma_delta_stand;       // variation among stands  (QUESTION - species specific?)
+  real <lower=0>         sigma_delta_stand;       // variation among stands  
 
   // Dispersion: (for negative binomial seed production), per state and species
   vector [S]             log_phi_species;         // species specific overdispersion
-  vector [2]             log_phi_state;           // state specific overdispersion (QUESTION - species + state?)
+  vector [2]             log_phi_state;           // state specific overdispersion 
 }
 
 
-//TRANSFORMED PARAMETERS (these are direct transformations, often for stability (CHECK)
+//TRANSFORMED PARAMETERS (these are direct transformations for stability (CHECK - is this correct?)
 
 transformed parameters {                                  
   // Non-centered species effects on transition probabilities
@@ -126,8 +128,8 @@ transformed parameters {
   vector[F] log_alpha_high;
 
   for (f in 1:F) {
-    int s  = species_id[f];                            // s is the species index - get from species_id (CHECK)
-    int st = stand_id[f];                              // st is the stand index - get from stand_id (CHECK)
+    int s  = species_id[f];                            // s is the species index - get from species_id
+    int st = stand_id[f];                              // st is the stand index - get from stand_id
 
     log_alpha_low[f]  = mu_log_low                     // global mean seed production
                       + alpha_low_species[s]           // add the species effect
@@ -135,14 +137,14 @@ transformed parameters {
 
     log_alpha_high[f] = log_alpha_low[f]               // seed production at low state
                   + log1p_exp(mu_log_delta)            // add the difference between low and high (between low and high, constrained to be > 0)
-                  + log1p_exp(log_delta_species[s])    // add a species specific effect (QUESTION - should this be constrained to be > 0?)
-                  + log1p_exp(log_delta_stand[s,st]);  // add a species specific stand effect (QUESTION - should this be constrained to be > 0?)
+                  + log1p_exp(log_delta_species[s])    // add a species specific effect 
+                  + log1p_exp(log_delta_stand[s,st]);  // add a species specific stand effect 
   }
 
   //  Per-series transition matrices
   vector<lower=0, upper=1>[F] theta1;
   vector<lower=0, upper=1>[F] theta2;
-  array[F] matrix[2, 2] Gamma;                         // What is going on here?
+  array[F] matrix[2, 2] Gamma;                         // JHRL - just explain what is going on in these lines
 
   for (f in 1:F) {
     int s  = species_id[f];
@@ -154,7 +156,7 @@ transformed parameters {
                          + alpha_theta2_species[s])
                       ;
 
-    Gamma[f][1, 1] = theta1[f];                      // (QUESTION - why gamma?)
+    Gamma[f][1, 1] = theta1[f];                      // JHRL - explain these lines
     Gamma[f][1, 2] = 1 - theta1[f];
     Gamma[f][2, 1] = 1 - theta2[f];
     Gamma[f][2, 2] = theta2[f];
@@ -170,15 +172,15 @@ transformed parameters {
         log_omega [2,t] =0;
       } else {                                       // Likelihood of data given state 1, state 2? (QUESTION) 
         log_omega[1, t] = neg_binomial_2_log_lpmf(   // State 1 likelihood 
-          y[t] | log_alpha_low[f]  + log_area_ratio[t], exp(log_phi_species[s] + log_phi_state[1])); // run through this (QUESTION) 
+          y[t] | log_alpha_low[f]  + log_area_ratio[t], exp(log_phi_species[s] + log_phi_state[1])); // provide comment 
       log_omega[2, t] = neg_binomial_2_log_lpmf(     // State 2 likelihood
-          y[t] | log_alpha_high[f] + log_area_ratio[t], exp(log_phi_species[s] + log_phi_state[2])); // run through this (QUESTION) 
+          y[t] | log_alpha_high[f] + log_area_ratio[t], exp(log_phi_species[s] + log_phi_state[2])); // provide comment
       }
     }
   }
 }
 
-// NOTE FROM JANNEKE - up until here I mostly had time to comment / think, here is about where I ran out of time
+// NOTE FROM JANNEKE - I added comments to here, but not below
 
 
 //MODEL
@@ -224,7 +226,7 @@ model {
 }
 
 
-//GENERATED QUANTILES  (QUESTION) - probably could use more time or hand holding here
+//GENERATED QUANTILES 
 
 generated quantities {
   array[N] int<lower=0>          y_rep;
